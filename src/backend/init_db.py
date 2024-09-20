@@ -6,19 +6,19 @@ DataBaseClient.cursor.execute(
     DROP TABLE IF EXISTS rus
     """
 )
-logger.info("Rus table was dropped")
+logger.info("rus table was dropped")
 DataBaseClient.cursor.execute(
     """
     DROP TABLE IF EXISTS eng
     """
 )
-logger.info("Eng table was dropped")
+logger.info("eng table was dropped")
 DataBaseClient.cursor.execute(
     """
     DROP TABLE IF EXISTS eng_rus
     """
 )
-logger.info("Eng_rus table was dropped")
+logger.info("eng_rus table was dropped")
 DataBaseClient.cursor.execute(
     """
     CREATE TABLE rus(
@@ -48,7 +48,8 @@ DataBaseClient.cursor.execute(
         eng_id INTEGER NOT NULL,
         rus_id INTEGER NOT NULL,
         FOREIGN KEY(eng_id) REFERENCES eng(id) ON DELETE CASCADE,
-        FOREIGN KEY(rus_id) REFERENCES rus(id) ON DELETE CASCADE
+        FOREIGN KEY(rus_id) REFERENCES rus(id) ON DELETE CASCADE,
+        UNIQUE (eng_id, rus_id)
     )
     """
 )

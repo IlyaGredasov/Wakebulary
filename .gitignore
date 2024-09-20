@@ -2,5 +2,6 @@
 __pycache__/
 /venv/
 /database.db
+/logs.log.*
 /logs.log
 *.pyc
