@@ -29,10 +29,6 @@ class DataBaseClient:
         return None
 
     @staticmethod
-    def is_eng(word: str) -> bool:
-        return all(c in string.ascii_letters for c in word)
-
-    @staticmethod
     @low_and_cap_args
     def insert_word(word: str, translation: list[str]) -> None:
         word_type = DataBaseClient.word_type(word)
@@ -47,66 +43,58 @@ class DataBaseClient:
             logger.info(f"Required word translation, {word}, {tuple(translation)}")
             return
         translations_type = translations_type[0]
+        is_transl_exist: list[bool] = [True] * len(translation)
         if not DataBaseClient.find_word(word):
             DataBaseClient.cursor.execute(
                 f"INSERT INTO {word_type} (word) VALUES (\"{word}\");",
             )
-        for transl in translation:
+        for i, transl in enumerate(translation):
             if not DataBaseClient.find_word(transl):
                 DataBaseClient.cursor.execute(
                     f"INSERT INTO {translations_type} (word) VALUES (\"{transl}\")",
                 )
-        for transl in translation:
-            DataBaseClient.cursor.execute(
-                f"""
-                INSERT INTO eng_rus (eng_id, rus_id)
-                SELECT eng.id, rus.id
-                FROM eng CROSS JOIN rus
-                WHERE (?,?) NOT IN (
-                    SELECT eng.word, rus.word
-                    FROM eng
-                        INNER JOIN eng_rus ON eng.id = eng_rus.eng_id
-                        INNER JOIN rus ON eng_rus.rus_id = rus.id
-                    WHERE eng.word = ? AND rus.word = ? 
+                is_transl_exist[i] = False
+        for i, transl in enumerate(translation):
+            if not is_transl_exist[i]:
+                res = DataBaseClient.cursor.execute(
+                    f"""
+                    INSERT INTO eng_rus (eng_id, rus_id)
+                    SELECT eng.id, rus.id
+                    FROM eng CROSS JOIN rus
+                    WHERE eng.word = ? AND rus.word = ?
+                    """,
+                    (word, transl) if word_type == "eng" else (transl, word)
                 )
-                """,
-                (word, transl, word, transl) if word_type == "eng" else (transl, word, transl, word)
-            )
             logger.info(f"Translations were inserted successfully, {word}, {transl}")
         DataBaseClient.connection.commit()
 
     @staticmethod
-    def erase_translation(word: str, transl: str) -> None:
-        if DataBaseClient.is_eng(word) and not DataBaseClient.is_eng(transl):
+    @low_and_cap_args
+    def erase_word(word: str, translation: list[str]) -> None:
+        word_type = DataBaseClient.word_type(word)
+        translations_type = list(map(DataBaseClient.word_type, translation))
+        if word_type is None or any(t is None for t in translations_type):
+            logger.info(f"Invalid word type in query,{word},{tuple(translation)}")
+            return
+        if len(set(translations_type)) > 1:
+            logger.info(f"Different word type in translation, {word}, {tuple(translation)}")
+            return
+        if word_type == translations_type[0]:
+            logger.info(f"Required word translation, {word}, {tuple(translation)}")
+            return
+        for transl in translation:
             DataBaseClient.cursor.execute(
-                """
-                DELETE FROM eng_rus
-                WHERE (eng_rus.rus_id,eng_rus.eng_id) IN ( 
-                    SELECT rus.id, eng.id
-                    FROM eng
-                        INNER JOIN eng_rus ON eng.id = eng_rus.eng_id
-                        INNER JOIN rus ON eng_rus.rus_id = rus.id
-                    WHERE eng.word = ? AND rus.word = ?
-                )
-                """,
-                (word, transl,)
+                f"""
+                    DELETE FROM eng_rus 
+                    WHERE (eng_id, rus_id) IN (
+                        SELECT eng.id, rus.id
+                        FROM eng CROSS JOIN rus
+                        WHERE eng.word = ? AND rus.word = ?
+                    )
+                    """,
+                (word, transl) if word_type == "eng" else (transl, word)
             )
-        elif not DataBaseClient.is_eng(word) and DataBaseClient.is_eng(transl):
-            DataBaseClient.cursor.execute(
-                """
-                DELETE FROM eng_rus
-                WHERE (eng_rus.rus_id,eng_rus.eng_id) IN ( 
-                    SELECT rus.id, eng.id
-                    FROM eng
-                        INNER JOIN eng_rus ON eng.id = eng_rus.eng_id
-                        INNER JOIN rus ON eng_rus.rus_id = rus.id
-                    WHERE eng.word = ? AND rus.word = ?
-                )
-                """,
-                (transl, word,)
-            )
-        else:
-            raise ValueError("Query is not valid")
+            logger.info(f"Translations were inserted successfully, {word}, {transl}")
         DataBaseClient.connection.commit()
 
     @staticmethod
@@ -118,6 +106,21 @@ class DataBaseClient:
                 f"DELETE FROM {word_type} WHERE {word_type}.word = \"{word}\""
             )
             DataBaseClient.connection.commit()
+
+    @staticmethod
+    @low_and_cap_args
+    def get_statistics(word: str) -> tuple[int, int]:
+        word_type = DataBaseClient.word_type(word)
+        if word_type is not None:
+            res = DataBaseClient.cursor.execute(
+                f"""
+                SELECT correct, attempts
+                FROM {word_type}
+                WHERE {word_type}.word = \"{word}\"
+                """
+            )
+            query = res.fetchall()
+            return query[0] if len(query) > 0 else (0, 0)
 
     @staticmethod
     @low_and_cap_args
@@ -137,54 +140,35 @@ class DataBaseClient:
     @staticmethod
     @low_and_cap_args
     def translate_word(word: str) -> list[str]:
-        if DataBaseClient.is_eng(word):
-            DataBaseClient.cursor.execute(
-                """
-                SELECT rus.word
-                FROM
-                    eng
-                    INNER JOIN eng_rus ON eng.id = eng_rus.eng_id
-                    INNER JOIN rus ON eng_rus.rus_id = rus.id
-                WHERE eng.word = ?
-                """,
-                (word,)
-            )
-        else:
-            DataBaseClient.cursor.execute(
-                """
-                SELECT eng.word
-                FROM
-                    rus
-                    INNER JOIN eng_rus ON rus.id = eng_rus.rus_id
-                    INNER JOIN eng ON eng_rus.eng_id = eng.id
-                WHERE rus.word = ?
-                """,
-                (word,)
-            )
+        word_type = DataBaseClient.word_type(word)
+        opposite_word_type = "rus" if word_type == "eng" else "eng"
+        DataBaseClient.cursor.execute(
+            f"""
+            SELECT {opposite_word_type}.word
+            FROM
+                {word_type}
+                INNER JOIN eng_rus ON {word_type}.id = eng_rus.{word_type}_id
+                INNER JOIN {opposite_word_type} ON eng_rus.{opposite_word_type}_id = {opposite_word_type}.id
+            WHERE {word_type}.word = ?
+            """,
+            (word,)
+        )
         return [el[0] for el in DataBaseClient.cursor.fetchall()]
 
     @staticmethod
+    @low_and_cap_args
     def find_word(word: str) -> bool:
-        if DataBaseClient.is_eng(word):
-            res = DataBaseClient.cursor.execute(
-                """
-                SELECT eng.word
-                FROM eng
-                WHERE word = ?
-                """,
-                (word,)
-            )
-        else:
-            res = DataBaseClient.cursor.execute(
-                """
-                SELECT rus.word
-                FROM rus
-                WHERE word = ?
-                """,
-                (word,)
-            )
-        translation = res.fetchall()
-        return len(translation) > 0
+        word_type = DataBaseClient.word_type(word)
+        res = DataBaseClient.cursor.execute(
+            f"""
+            SELECT {word_type}.word
+            FROM {word_type}
+            WHERE word = ?
+            """,
+            (word,)
+        )
+        query = res.fetchall()
+        return len(query) > 0
 
     @staticmethod
     def load_to_dict(mode: Literal["rus", "eng"]) -> dict[str, list[str]]:
@@ -193,3 +177,59 @@ class DataBaseClient:
         )
         words = [el[0] for el in DataBaseClient.cursor.fetchall()]
         return {word: DataBaseClient.translate_word(word) for word in words}
+
+    @staticmethod
+    def init_db() -> None:
+        DataBaseClient.cursor.execute(
+            """
+            DROP TABLE IF EXISTS rus
+            """
+        )
+        logger.info("rus table was dropped")
+        DataBaseClient.cursor.execute(
+            """
+            DROP TABLE IF EXISTS eng
+            """
+        )
+        logger.info("eng table was dropped")
+        DataBaseClient.cursor.execute(
+            """
+            DROP TABLE IF EXISTS eng_rus
+            """
+        )
+        logger.info("eng_rus table was dropped")
+        DataBaseClient.cursor.execute(
+            """
+            CREATE TABLE rus(
+                id INTEGER PRIMARY KEY,
+                word VARCHAR(255) UNIQUE NOT NULL,
+                correct INTEGER DEFAULT 0,
+                attempts INTEGER DEFAULT 0
+            )
+            """
+        )
+        logger.info("rus table was created")
+        DataBaseClient.cursor.execute(
+            """
+            CREATE TABLE eng(
+                id INTEGER PRIMARY KEY,
+                word VARCHAR(255) UNIQUE NOT NULL,
+                correct INTEGER DEFAULT 0,
+                attempts INTEGER DEFAULT 0
+            )
+            """
+        )
+        logger.info("eng table was created")
+        DataBaseClient.cursor.execute(
+            """
+            CREATE TABLE eng_rus(
+                id INTEGER PRIMARY KEY,
+                eng_id INTEGER NOT NULL,
+                rus_id INTEGER NOT NULL,
+                FOREIGN KEY(eng_id) REFERENCES eng(id) ON DELETE CASCADE,
+                FOREIGN KEY(rus_id) REFERENCES rus(id) ON DELETE CASCADE,
+                UNIQUE (eng_id, rus_id)
+            )
+            """
+        )
+        logger.info("eng_rus table was created")
