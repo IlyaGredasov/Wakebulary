@@ -1,5 +1,5 @@
-from datetime import time
 from dataclasses import dataclass
+from typing import NamedTuple
 
 
 @dataclass
@@ -12,14 +12,27 @@ class WordStatistics:
     def score(self) -> float:
         return self.correct / max(1, self.attempts)
 
+    def __hash__(self):
+        return hash((self.word, self.correct, self.attempts))
+
+
+class WordTranslation:
+
+    def __init__(self, word: str, translation: list[str]):
+        self.word = word
+        self.translation = translation
+
+    def __str__(self):
+        return f"{self.word} - {tuple(self.translation)}"
+
 
 @dataclass
 class SessionStatistics:
-    answer_count: int
-    mistake_count: int
+    correct_count: int
+    attempts_count: int
 
     @property
-    def mistake_per_word(self) -> float:
-        return self.mistake_count / max(1, self.answer_count)
+    def precision(self) -> float:
+        return self.correct_count / max(1, self.attempts_count)
 
-    session_time: time
+    session_time_start: float

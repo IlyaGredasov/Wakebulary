@@ -1,5 +1,6 @@
 from __future__ import annotations
-from src.backend.logger import logger
+from logger import logger
+from src.backend.statistics import WordStatistics
 import sqlite3
 import string
 from typing import Literal
@@ -7,8 +8,24 @@ from typing import Literal
 
 def low_and_cap_args(func):
     def wrapper(*args, **kwargs):
-        new_args = [arg.lower().capitalize() if isinstance(arg, str) else arg for arg in args]
-        new_kwargs = {k: v.lower().capitalize() if isinstance(v, str) else v for k, v in kwargs.items()}
+        new_args = [
+            arg.lower().capitalize().replace(u'\xa0', u' ') if isinstance(arg, str) else
+            (list(map(lambda x: x.lower().capitalize().replace(u'\xa0', u' ') if isinstance(x, str) else x,
+                      arg)) if isinstance(arg, list) else
+             tuple(map(lambda x: x.lower().capitalize().replace(u'\xa0', u' ') if isinstance(x, str) else x,
+                       arg)) if isinstance(arg, tuple) else
+             arg)
+            for arg in args
+        ]
+        new_kwargs = {
+            k: v.lower().capitalize().replace(u'\xa0', u' ') if isinstance(v, str) else
+            (list(map(lambda x: x.lower().capitalize().replace(u'\xa0', u' ') if isinstance(x, str) else x,
+                      v)) if isinstance(v, list) else
+             tuple(map(lambda x: x.lower().capitalize().replace(u'\xa0', u' ') if isinstance(x, str) else x,
+                       v)) if isinstance(v, tuple) else
+             v)
+            for k, v in kwargs.items()
+        }
         return func(*new_args, **new_kwargs)
 
     return wrapper
@@ -21,9 +38,9 @@ class DataBaseClient:
     @staticmethod
     @low_and_cap_args
     def word_type(word: str) -> Literal["rus", "eng"] | None:
-        if all(c in string.ascii_letters + string.punctuation for c in word):
+        if all(c in string.ascii_letters + string.punctuation + ' ' for c in word):
             return "eng"
-        if all(c in "абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ" + string.punctuation for c in
+        if all(c in "абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ " + string.punctuation for c in
                word):
             return "rus"
         return None
@@ -43,7 +60,6 @@ class DataBaseClient:
             logger.info(f"Required word translation, {word}, {tuple(translation)}")
             return
         translations_type = translations_type[0]
-        is_transl_exist: list[bool] = [True] * len(translation)
         if not DataBaseClient.find_word(word):
             DataBaseClient.cursor.execute(
                 f"INSERT INTO {word_type} (word) VALUES (\"{word}\");",
@@ -53,10 +69,21 @@ class DataBaseClient:
                 DataBaseClient.cursor.execute(
                     f"INSERT INTO {translations_type} (word) VALUES (\"{transl}\")",
                 )
-                is_transl_exist[i] = False
         for i, transl in enumerate(translation):
-            if not is_transl_exist[i]:
-                res = DataBaseClient.cursor.execute(
+            res = DataBaseClient.cursor.execute(
+                f"""
+                SELECT eng_rus.eng_id, eng_rus.rus_id
+                FROM
+                    eng
+                    INNER JOIN eng_rus ON eng.id = eng_rus.eng_id
+                    INNER JOIN rus ON eng_rus.rus_id = rus.id
+                WHERE eng.word = ? AND rus.word = ?
+                """,
+                (word, transl) if word_type == "eng" else (transl, word)
+            )
+            query = res.fetchall()
+            if len(query) == 0:
+                DataBaseClient.cursor.execute(
                     f"""
                     INSERT INTO eng_rus (eng_id, rus_id)
                     SELECT eng.id, rus.id
@@ -65,7 +92,7 @@ class DataBaseClient:
                     """,
                     (word, transl) if word_type == "eng" else (transl, word)
                 )
-            logger.info(f"Translations were inserted successfully, {word}, {transl}")
+                logger.info(f"Translations were inserted successfully, {word}, {transl}")
         DataBaseClient.connection.commit()
 
     @staticmethod
@@ -171,12 +198,27 @@ class DataBaseClient:
         return len(query) > 0
 
     @staticmethod
-    def load_to_dict(mode: Literal["rus", "eng"]) -> dict[str, list[str]]:
-        DataBaseClient.cursor.execute(
-            f"SELECT {mode}.word FROM {mode}"
+    def load_to_dict(mode: Literal["rus", "eng"]) -> dict[WordStatistics, list[str]]:
+        res = DataBaseClient.cursor.execute(
+            f"SELECT * FROM {mode}"
         )
-        words = [el[0] for el in DataBaseClient.cursor.fetchall()]
-        return {word: DataBaseClient.translate_word(word) for word in words}
+        words = [WordStatistics(*el[1:]) for el in res.fetchall()]
+        return {word_stat: DataBaseClient.translate_word(word_stat.word) for word_stat in words}
+    @staticmethod
+    def clear_statistics() -> None:
+        DataBaseClient.cursor.execute(
+            """
+            UPDATE rus SET correct = 0, attempts = 0
+            """
+        )
+        logger.info("All statistics in rus table were cleared")
+        DataBaseClient.cursor.execute(
+            """
+            UPDATE eng SET correct = 0, attempts = 0
+            """
+        )
+        logger.info("All statistics in eng table were cleared")
+        DataBaseClient.connection.commit()
 
     @staticmethod
     def init_db() -> None:
