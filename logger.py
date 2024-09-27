@@ -3,7 +3,7 @@ from logging.handlers import RotatingFileHandler
 import os
 
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 log_file_path = os.path.join(os.path.dirname(__file__), "logs.log")
 handler = RotatingFileHandler(log_file_path, encoding='utf-8')
 

@@ -1,18 +1,22 @@
 from __future__ import annotations
 
-import time
+import os
+from time import time, sleep
 from typing import Literal
 from random import expovariate, choice
+
+from logger import logger
 from src.backend.statistics import WordStatistics, SessionStatistics, WordTranslation
 from src.backend.db_client import DataBaseClient
 
 
 class SampleGenerator:
-    def __init__(self, mode: Literal["rus", "eng"], alpha: float = 8) -> None:
+    def __init__(self, mode: Literal["rus", "eng"], alpha: float = 8, clear_delay: float = 0.7) -> None:
         self.global_list = []
         self.raw_dict: dict[WordStatistics, list[str]] = DataBaseClient.load_to_dict(mode)
         self.alpha = alpha
-        self.session_stats = SessionStatistics(0, 0, time.time())
+        self.session_stats = SessionStatistics(0, 0, time())
+        self.clear_delay = clear_delay
 
     def start_learning_loop(self, sample_size: int = 30) -> None:
         self.global_list: list[WordStatistics] = list(self.raw_dict.keys())
@@ -22,17 +26,20 @@ class SampleGenerator:
                                                    self.global_list]
         sample: list[WordTranslation] = []
         while self.global_list:
-            while len(sample) < sample_size:
+            while len(self.global_list) > 0 and len(sample) < sample_size:
                 index = round(expovariate(self.alpha / len(self.global_list)))
                 while 0 > index >= len(self.global_list):
                     index = round(expovariate(self.alpha / len(self.global_list)))
+                    logger.debug(f"{index} out of {len(self.global_list)}")
                 sample.append(self.global_list.pop(index))
             while sample:
                 question_word = choice(sample)
                 print(f"{question_word.word} ?")
                 print(f"Remain: {len(self.global_list)}, remain in sample: {len(sample)}, Your answer:")
                 answer = input().capitalize()
-                correct, attempts = DataBaseClient.get_statistics(answer)
+                if answer == "!end":
+                    raise KeyboardInterrupt
+                correct, attempts = DataBaseClient.get_statistics(question_word.word)
                 if answer in question_word.translation:
                     print(f"Yes! {answer}")
                     question_word.translation.remove(answer)
@@ -45,3 +52,6 @@ class SampleGenerator:
                     print(f"No: {question_word.translation}")
                     self.session_stats.attempts_count += 1
                     DataBaseClient.set_statistics(question_word.word, correct, attempts + 1)
+                if self.clear_delay > 0:
+                    sleep(self.clear_delay)
+                    os.system('cls' if os.name == 'nt' else 'clear')

@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from typing import NamedTuple
+from time import time
+from datetime import timedelta
 
 
 @dataclass
@@ -22,7 +23,7 @@ class WordTranslation:
         self.word = word
         self.translation = translation
 
-    def __str__(self):
+    def __repr__(self):
         return f"{self.word} - {tuple(self.translation)}"
 
 
@@ -30,9 +31,15 @@ class WordTranslation:
 class SessionStatistics:
     correct_count: int
     attempts_count: int
+    session_time: float
 
     @property
     def precision(self) -> float:
         return self.correct_count / max(1, self.attempts_count)
 
-    session_time_start: float
+    def timer(self) -> None:
+        self.session_time: timedelta = timedelta(seconds=time()-self.session_time)
+
+    def __repr__(self):
+        return (f"Time: {self.session_time} - {self.correct_count} correct - "
+                f"{self.attempts_count} attempts - {round(self.precision * 100, 2)}% precision")
