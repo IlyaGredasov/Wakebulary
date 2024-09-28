@@ -11,7 +11,7 @@ from src.backend.db_client import DataBaseClient
 
 
 class SampleGenerator:
-    def __init__(self, mode: Literal["rus", "eng"], alpha: float = 8, clear_delay: float = 0.7) -> None:
+    def __init__(self, mode: Literal["rus", "eng"], alpha: float = 8, clear_delay: float = 1) -> None:
         self.global_list = []
         self.raw_dict: dict[WordStatistics, list[str]] = DataBaseClient.load_to_dict(mode)
         self.alpha = alpha

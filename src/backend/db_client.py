@@ -30,7 +30,6 @@ def low_and_cap_args(func):
 
     return wrapper
 
-
 class DataBaseClient:
     connection: sqlite3.Connection = sqlite3.connect("database.db")
     cursor = connection.cursor()
@@ -129,6 +128,18 @@ class DataBaseClient:
     def delete_word(word: str) -> None:
         word_type = DataBaseClient.word_type(word)
         if word_type is not None:
+            DataBaseClient.cursor.execute(
+                f"""
+                DELETE FROM eng_rus
+                WHERE eng_rus.id IN (
+                    SELECT eng_rus.id
+                    FROM
+                    eng_rus
+                        INNER JOIN {word_type} ON {word_type}.id = eng_rus.{word_type}_id
+                    WHERE {word_type}.word = \"{word}\"
+                )
+                """
+            )
             DataBaseClient.cursor.execute(
                 f"DELETE FROM {word_type} WHERE {word_type}.word = \"{word}\""
             )
