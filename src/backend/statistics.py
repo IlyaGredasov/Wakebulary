@@ -43,4 +43,3 @@ class SessionStatistics:
     def __repr__(self):
         return (f"Time: {self.session_time} - {self.correct_count} correct - "
                 f"{self.attempts_count} attempts - {round(self.precision * 100, 2)}% precision")
-

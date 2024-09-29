@@ -3,6 +3,7 @@ from logger import logger
 from src.backend.statistics import WordStatistics
 import sqlite3
 import string
+from os.path import isfile
 from typing import Literal
 
 
@@ -30,13 +31,24 @@ def low_and_cap_args(func):
 
     return wrapper
 
-class DataBaseClient:
-    connection: sqlite3.Connection = sqlite3.connect("database.db")
-    cursor = connection.cursor()
 
-    @staticmethod
+class DataBaseClient:
+    __instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if not cls.__instance:
+            cls.__instance = super().__new__(cls)
+        return cls.__instance
+
+    def __init__(self):
+        self.connection: sqlite3.Connection = sqlite3.connect("database.db")
+        self.cursor = self.connection.cursor()
+        if not isfile("database.db"):
+            self.init_db()
+        self.cursor.execute("PRAGMA foreign_keys = ON")
+
     @low_and_cap_args
-    def word_type(word: str) -> Literal["rus", "eng"] | None:
+    def word_type(self, word: str) -> Literal["rus", "eng"] | None:
         if all(c in string.ascii_letters + string.punctuation + ' ' for c in word):
             return "eng"
         if all(c in "абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ " + string.punctuation for c in
@@ -44,11 +56,10 @@ class DataBaseClient:
             return "rus"
         return None
 
-    @staticmethod
     @low_and_cap_args
-    def insert_word(word: str, translation: list[str]) -> None:
-        word_type = DataBaseClient.word_type(word)
-        translations_type = list(map(DataBaseClient.word_type, translation))
+    def insert_transl(self, word: str, translation: list[str]) -> None:
+        word_type = self.word_type(word)
+        translations_type = list(map(self.word_type, translation))
         if word_type is None or any(t is None for t in translations_type):
             logger.info(f"Invalid word type in query,{word},{tuple(translation)}")
             return
@@ -59,17 +70,17 @@ class DataBaseClient:
             logger.info(f"Required word translation, {word}, {tuple(translation)}")
             return
         translations_type = translations_type[0]
-        if not DataBaseClient.find_word(word):
-            DataBaseClient.cursor.execute(
+        if not self.find_word(word):
+            self.cursor.execute(
                 f"INSERT INTO {word_type} (word) VALUES (\"{word}\");",
             )
         for i, transl in enumerate(translation):
-            if not DataBaseClient.find_word(transl):
-                DataBaseClient.cursor.execute(
+            if not self.find_word(transl):
+                self.cursor.execute(
                     f"INSERT INTO {translations_type} (word) VALUES (\"{transl}\")",
                 )
         for i, transl in enumerate(translation):
-            res = DataBaseClient.cursor.execute(
+            res = self.cursor.execute(
                 f"""
                 SELECT eng_rus.eng_id, eng_rus.rus_id
                 FROM
@@ -82,7 +93,7 @@ class DataBaseClient:
             )
             query = res.fetchall()
             if len(query) == 0:
-                DataBaseClient.cursor.execute(
+                self.cursor.execute(
                     f"""
                     INSERT INTO eng_rus (eng_id, rus_id)
                     SELECT eng.id, rus.id
@@ -92,13 +103,12 @@ class DataBaseClient:
                     (word, transl) if word_type == "eng" else (transl, word)
                 )
                 logger.info(f"Translations were inserted successfully, {word}, {transl}")
-        DataBaseClient.connection.commit()
+        self.connection.commit()
 
-    @staticmethod
     @low_and_cap_args
-    def erase_word(word: str, translation: list[str]) -> None:
-        word_type = DataBaseClient.word_type(word)
-        translations_type = list(map(DataBaseClient.word_type, translation))
+    def erase_transl(self, word: str, translation: list[str]) -> None:
+        word_type = self.word_type(word)
+        translations_type = list(map(self.word_type, translation))
         if word_type is None or any(t is None for t in translations_type):
             logger.info(f"Invalid word type in query,{word},{tuple(translation)}")
             return
@@ -109,7 +119,7 @@ class DataBaseClient:
             logger.info(f"Required word translation, {word}, {tuple(translation)}")
             return
         for transl in translation:
-            DataBaseClient.cursor.execute(
+            self.cursor.execute(
                 f"""
                     DELETE FROM eng_rus 
                     WHERE (eng_id, rus_id) IN (
@@ -121,36 +131,22 @@ class DataBaseClient:
                 (word, transl) if word_type == "eng" else (transl, word)
             )
             logger.info(f"Translations were inserted successfully, {word}, {transl}")
-        DataBaseClient.connection.commit()
+        self.connection.commit()
 
-    @staticmethod
     @low_and_cap_args
-    def delete_word(word: str) -> None:
-        word_type = DataBaseClient.word_type(word)
+    def delete_word(self, word: str) -> None:
+        word_type = self.word_type(word)
         if word_type is not None:
-            DataBaseClient.cursor.execute(
-                f"""
-                DELETE FROM eng_rus
-                WHERE eng_rus.id IN (
-                    SELECT eng_rus.id
-                    FROM
-                    eng_rus
-                        INNER JOIN {word_type} ON {word_type}.id = eng_rus.{word_type}_id
-                    WHERE {word_type}.word = \"{word}\"
-                )
-                """
-            )
-            DataBaseClient.cursor.execute(
+            self.cursor.execute(
                 f"DELETE FROM {word_type} WHERE {word_type}.word = \"{word}\""
             )
-            DataBaseClient.connection.commit()
+            self.connection.commit()
 
-    @staticmethod
     @low_and_cap_args
-    def get_statistics(word: str) -> tuple[int, int]:
-        word_type = DataBaseClient.word_type(word)
+    def get_statistics(self, word: str) -> tuple[int, int]:
+        word_type = self.word_type(word)
         if word_type is not None:
-            res = DataBaseClient.cursor.execute(
+            res = self.cursor.execute(
                 f"""
                 SELECT correct, attempts
                 FROM {word_type}
@@ -160,12 +156,11 @@ class DataBaseClient:
             query = res.fetchall()
             return query[0] if len(query) > 0 else (0, 0)
 
-    @staticmethod
     @low_and_cap_args
-    def set_statistics(word: str, correct: int, attempts: int) -> None:
-        word_type = DataBaseClient.word_type(word)
+    def set_statistics(self, word: str, correct: int, attempts: int) -> None:
+        word_type = self.word_type(word)
         if word_type is not None:
-            DataBaseClient.cursor.execute(
+            self.cursor.execute(
                 f"""
                 UPDATE {word_type}
                 SET
@@ -173,14 +168,13 @@ class DataBaseClient:
                 WHERE {word_type}.word = \"{word}\"
                 """
             )
-            DataBaseClient.connection.commit()
+            self.connection.commit()
 
-    @staticmethod
     @low_and_cap_args
-    def translate_word(word: str) -> list[str]:
-        word_type = DataBaseClient.word_type(word)
+    def translate_word(self, word: str) -> list[str]:
+        word_type = self.word_type(word)
         opposite_word_type = "rus" if word_type == "eng" else "eng"
-        DataBaseClient.cursor.execute(
+        self.cursor.execute(
             f"""
             SELECT {opposite_word_type}.word
             FROM
@@ -191,13 +185,12 @@ class DataBaseClient:
             """,
             (word,)
         )
-        return [el[0] for el in DataBaseClient.cursor.fetchall()]
+        return [el[0] for el in self.cursor.fetchall()]
 
-    @staticmethod
     @low_and_cap_args
-    def find_word(word: str) -> bool:
-        word_type = DataBaseClient.word_type(word)
-        res = DataBaseClient.cursor.execute(
+    def find_word(self, word: str) -> bool:
+        word_type = self.word_type(word)
+        res = self.cursor.execute(
             f"""
             SELECT {word_type}.word
             FROM {word_type}
@@ -208,50 +201,48 @@ class DataBaseClient:
         query = res.fetchall()
         return len(query) > 0
 
-    @staticmethod
-    def load_to_dict(mode: Literal["rus", "eng"]) -> dict[WordStatistics, list[str]]:
-        res = DataBaseClient.cursor.execute(
+    def load_to_dict(self, mode: Literal["rus", "eng"]) -> dict[WordStatistics, list[str]]:
+        res = self.cursor.execute(
             f"SELECT * FROM {mode}"
         )
         words = [WordStatistics(*el[1:]) for el in res.fetchall()]
-        return {word_stat: DataBaseClient.translate_word(word_stat.word) for word_stat in words}
-    @staticmethod
-    def clear_statistics() -> None:
-        DataBaseClient.cursor.execute(
+        return {word_stat: self.translate_word(word_stat.word) for word_stat in words}
+
+    def clear_statistics(self) -> None:
+        self.cursor.execute(
             """
             UPDATE rus SET correct = 0, attempts = 0
             """
         )
         logger.info("All statistics in rus table were cleared")
-        DataBaseClient.cursor.execute(
+        self.cursor.execute(
             """
             UPDATE eng SET correct = 0, attempts = 0
             """
         )
         logger.info("All statistics in eng table were cleared")
-        DataBaseClient.connection.commit()
+        self.connection.commit()
 
-    @staticmethod
-    def init_db() -> None:
-        DataBaseClient.cursor.execute(
+    def init_db(self) -> None:
+        self.cursor.execute(
             """
             DROP TABLE IF EXISTS rus
             """
         )
         logger.info("rus table was dropped")
-        DataBaseClient.cursor.execute(
+        self.cursor.execute(
             """
             DROP TABLE IF EXISTS eng
             """
         )
         logger.info("eng table was dropped")
-        DataBaseClient.cursor.execute(
+        self.cursor.execute(
             """
             DROP TABLE IF EXISTS eng_rus
             """
         )
         logger.info("eng_rus table was dropped")
-        DataBaseClient.cursor.execute(
+        self.cursor.execute(
             """
             CREATE TABLE rus(
                 id INTEGER PRIMARY KEY,
@@ -262,7 +253,7 @@ class DataBaseClient:
             """
         )
         logger.info("rus table was created")
-        DataBaseClient.cursor.execute(
+        self.cursor.execute(
             """
             CREATE TABLE eng(
                 id INTEGER PRIMARY KEY,
@@ -273,7 +264,7 @@ class DataBaseClient:
             """
         )
         logger.info("eng table was created")
-        DataBaseClient.cursor.execute(
+        self.cursor.execute(
             """
             CREATE TABLE eng_rus(
                 id INTEGER PRIMARY KEY,
