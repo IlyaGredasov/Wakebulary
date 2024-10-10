@@ -46,6 +46,7 @@ class DataBaseClient:
         if not isfile("database.db"):
             self.init_db()
         self.cursor.execute("PRAGMA foreign_keys = ON")
+        self.clear_orphans()
 
     @low_and_cap_args
     def word_type(self, word: str) -> Literal["rus", "eng"] | None:
@@ -134,13 +135,30 @@ class DataBaseClient:
         self.connection.commit()
 
     @low_and_cap_args
-    def delete_word(self, word: str) -> None:
-        word_type = self.word_type(word)
-        if word_type is not None:
-            self.cursor.execute(
-                f"DELETE FROM {word_type} WHERE {word_type}.word = \"{word}\""
+    def clear_orphans(self) -> None:
+        self.cursor.execute(
+            """
+            DELETE FROM rus
+            WHERE rus.word IN (
+                SELECT rus.word
+                FROM rus
+                        LEFT JOIN eng_rus ON rus.id = eng_rus.rus_id
+                WHERE rus_id IS NULL
             )
-            self.connection.commit()
+            """
+        )
+        self.cursor.execute(
+            """
+            DELETE FROM eng
+            WHERE eng.word IN (
+                SELECT eng.word
+                FROM eng
+                        LEFT JOIN eng_rus ON eng.id = eng_rus.eng_id
+                WHERE eng_id IS NULL
+            )
+            """
+        )
+        self.connection.commit()
 
     @low_and_cap_args
     def get_statistics(self, word: str) -> tuple[int, int]:
