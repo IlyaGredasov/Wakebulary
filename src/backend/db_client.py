@@ -3,7 +3,6 @@ from logger import logger
 from src.backend.statistics import WordStatistics
 import sqlite3
 import string
-from os.path import isfile
 from typing import Literal
 
 
@@ -43,7 +42,9 @@ class DataBaseClient:
     def __init__(self):
         self.connection: sqlite3.Connection = sqlite3.connect("database.db")
         self.cursor = self.connection.cursor()
-        if not isfile("database.db"):
+        tables_fetch = self.cursor.execute("SELECT name FROM sqlite_master")
+        tables = tables_fetch.fetchall()
+        if not tables:
             self.init_db()
         self.cursor.execute("PRAGMA foreign_keys = ON")
         self.clear_orphans()
@@ -295,3 +296,4 @@ class DataBaseClient:
             """
         )
         logger.info("eng_rus table was created")
+        self.connection.commit()

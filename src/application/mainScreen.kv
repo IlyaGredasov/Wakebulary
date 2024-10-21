@@ -1,0 +1,99 @@
+MainScreen:
+    name: "MainScreen"
+    FloatLayout:
+        orientation: 'vertical'
+        size_hint: (1, None)
+        pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+        MDRoundFlatButton:
+            text: "Начать обучение"
+            pos_hint: {"center_x": 0.5, "center_y": 2.7}
+            size_hint: (0.1, 0.1)
+            md_bg_color: 50/255, 0, 69/255, 1
+            text_color: 'white'
+            on_press: root.preparation_to_learn()
+
+        MDRoundFlatButton:
+            text: "Статистика"
+            pos_hint: {"center_x": 0.5, "center_y": 2}
+            size_hint: (0.1, 0.1)
+            md_bg_color: 50/255, 0, 69/255, 1
+            text_color: 'white'
+
+        MDRoundFlatButton:
+            text: "Настройки"
+            pos_hint: {"center_x": 0.5, "center_y": 1.3}
+            size_hint: (0.1, 0.1)
+            md_bg_color: 50/255, 0, 69/255, 1
+            text_color: 'white'
+            on_press: root.change_screen()
+
+        MDRoundFlatButton:
+            text: "Выход"
+            pos_hint: {"center_x": 0.5, "center_y": 0.6}
+            size_hint: (0.1, 0.1)
+            md_bg_color: 50/255, 0, 69/255, 1
+            text_color: 'white'
+            on_press: app.stop()
+
+<Preparation>:
+    GridLayout:
+        id: dialog_layout
+        cols: 1
+        padding: 10
+
+        MDTextField:
+            id: CountInput
+            input_filter: 'int'
+            hint_text: 'Введите количество слов для изучения'
+            mode: 'rectangle'
+            size_hint: (1, None)
+            height: 50
+            multiline: True
+
+        GridLayout:
+            id: choose_language
+            cols: 2
+            padding: 10
+
+            MDCheckbox:
+                id: eng_checkbox
+                group: 'lang'
+                color_active: '5B35A0'
+                size: (48, 48)
+                halign: 'right'
+                _no_ripple_effect: True
+
+            MDLabel:
+                text: "English"
+                halign: "left"
+                font_style: 'H6'
+                padding: 25
+
+            MDCheckbox:
+                id: rus_checkbox
+                group: 'lang'
+                color_active: '5B35A0'
+                size: (48, 48)
+                halign: 'right'
+                _no_ripple_effect: True
+
+            MDLabel:
+                text: "Russian"
+                halign: "left"
+                font_style: 'H6'
+                padding: 25
+
+            MDFlatButton:
+                text: "Cancel"
+                id: cancel_button
+                size_hint: (1, None)
+                width: 50
+                height: 50
+
+            MDRectangleFlatButton:
+                text: "OK"
+                id: confirm_button
+                size_hint: (1, None)
+                height: 50
+                width: 50
+                disabled: True
