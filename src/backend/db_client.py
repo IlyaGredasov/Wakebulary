@@ -8,26 +8,14 @@ from typing import Literal
 
 
 def low_and_cap_args(func):
-    def wrapper(*args, **kwargs):
+    def wrapper(*args):
         new_args = [
             arg.lower().capitalize().replace(u'\xa0', u' ') if isinstance(arg, str) else
             (list(map(lambda x: x.lower().capitalize().replace(u'\xa0', u' ') if isinstance(x, str) else x,
-                      arg)) if isinstance(arg, list) else
-             tuple(map(lambda x: x.lower().capitalize().replace(u'\xa0', u' ') if isinstance(x, str) else x,
-                       arg)) if isinstance(arg, tuple) else
-             arg)
+                      arg)) if isinstance(arg, list) else arg)
             for arg in args
         ]
-        new_kwargs = {
-            k: v.lower().capitalize().replace(u'\xa0', u' ') if isinstance(v, str) else
-            (list(map(lambda x: x.lower().capitalize().replace(u'\xa0', u' ') if isinstance(x, str) else x,
-                      v)) if isinstance(v, list) else
-             tuple(map(lambda x: x.lower().capitalize().replace(u'\xa0', u' ') if isinstance(x, str) else x,
-                       v)) if isinstance(v, tuple) else
-             v)
-            for k, v in kwargs.items()
-        }
-        return func(*new_args, **new_kwargs)
+        return func(*new_args)
 
     return wrapper
 
@@ -43,7 +31,9 @@ class DataBaseClient:
     def __init__(self):
         self.connection: sqlite3.Connection = sqlite3.connect("database.db")
         self.cursor = self.connection.cursor()
-        if not isfile("database.db"):
+        tables_fetch = self.cursor.execute("SELECT name FROM sqlite_master")
+        tables = tables_fetch.fetchall()
+        if not tables:
             self.init_db()
         self.cursor.execute("PRAGMA foreign_keys = ON")
         self.clear_orphans()
