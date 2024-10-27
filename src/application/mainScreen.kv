@@ -1,36 +1,240 @@
 MainScreen:
     name: "MainScreen"
     FloatLayout:
-        orientation: 'vertical'
-        size_hint: (1, None)
-        pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+        size_hint: (1, 1)  # Позволяет занимать всю доступную высоту и ширину
+
         MDRoundFlatButton:
-            text: "Начать обучение"
-            pos_hint: {"center_x": 0.5, "center_y": 2.7}
-            size_hint: (0.1, 0.1)
+            id: start_learning_loop
+            text: "Начать обучение desktop"
+            size_hint: (0.4, 0.08)
+            size_hint_max: (300, 50)
+            pos_hint: {"center_x": 0.5, "center_y": 0.75}
             md_bg_color: 50/255, 0, 69/255, 1
             text_color: 'white'
             on_press: root.preparation_to_learn()
 
         MDRoundFlatButton:
             text: "Статистика"
-            pos_hint: {"center_x": 0.5, "center_y": 2}
-            size_hint: (0.1, 0.1)
+            size_hint: (0.4, 0.08)
+            height: dp(48)
+            size_hint_max: (300, 50)
+            _min_width: root.ids.start_learning_loop.width
+            pos_hint: {"center_x": 0.5, "center_y": 0.6}  # Изменено на 0.6
             md_bg_color: 50/255, 0, 69/255, 1
             text_color: 'white'
 
         MDRoundFlatButton:
             text: "Настройки"
-            pos_hint: {"center_x": 0.5, "center_y": 1.3}
-            size_hint: (0.1, 0.1)
+            size_hint: (0.4, 0.08)
+            height: dp(48)
+            size_hint_max: (300, 50)
+            _min_width: root.ids.start_learning_loop.width
+            pos_hint: {"center_x": 0.5, "center_y": 0.45}  # Изменено на 0.45
             md_bg_color: 50/255, 0, 69/255, 1
             text_color: 'white'
             on_press: root.change_screen()
 
         MDRoundFlatButton:
             text: "Выход"
-            pos_hint: {"center_x": 0.5, "center_y": 0.6}
-            size_hint: (0.1, 0.1)
+            size_hint: (0.4, 0.08)
+            height: dp(48)
+            size_hint_max: (300, 50)
+            _min_width: root.ids.start_learning_loop.width
+            pos_hint: {"center_x": 0.5, "center_y": 0.3}  # Изменено на 0.3
+            md_bg_color: 50/255, 0, 69/255, 1
+            text_color: 'white'
+            on_press: app.stop()
+
+<DesktopView>
+    name: "DesktopView"
+    FloatLayout:
+        size_hint: (1, 1)  # Позволяет занимать всю доступную высоту и ширину
+
+        MDCard:
+            size_hint: None, None
+            size: 0.3, 0.5
+            pos_hint: {"center_x": 0.2, "center_y": 0.3}
+            padding: 25
+            spacing: 25
+            orientation: 'vertical'
+
+            Label:
+                text: "Новое слово"
+                size_hint_y: None
+                pos_hint: {'center_x':0.5, 'center_y': 0.5}
+                height: dp(30)
+
+            MDTextField:
+                id: word_input
+                hint_text: "word"
+                icon_right: "translate-off"
+                size_hint_x: None
+                width: dp(200)
+                font_size: 18
+                pos_hint:  {"center_x": 0.5}
+                field_filter: 'str'
+                on_text_validate: root.ids.translation_input.focus = True
+
+            MDTextField:
+                id: translation_input
+                hint_text: "translation"
+                icon_right: "translate"
+                size_hint_x: None
+                width: dp(200)
+                pos_hint:  {"center_x": 0.5}
+                field_filter: 'str'
+                on_text_validate: root.add_to_base()
+
+            MDRoundFlatButton:
+                id: add_to_base_button
+                text: 'Add to base'
+                font_size: 12
+                pos_hint: {"center_x": 0.5}
+                on_press: root.add_to_base()
+
+            MDRoundFlatButton:
+                text: 'Clear'
+                font_size: 12
+                _min_width: root.ids.add_to_base_button.width
+                pos_hint: {"center_x": 0.5}
+                on_press: app.clear()
+            
+            Widget:
+                size_hint_y: None
+                height: 10
+
+        MDRoundFlatButton:
+            id: start_learning_loop
+            text: "Начать обучение desktop"
+            size_hint: (0.4, 0.08)
+            size_hint_max: (300, 50)
+            pos_hint: {"center_x": 0.5, "center_y": 0.75}
+            md_bg_color: 50/255, 0, 69/255, 1
+            text_color: 'white'
+            on_press: root.preparation_to_learn()
+
+        MDRoundFlatButton:
+            text: "Статистика"
+            size_hint: (0.4, 0.08)
+            height: dp(48)
+            size_hint_max: (300, 50)
+            _min_width: root.ids.start_learning_loop.width
+            pos_hint: {"center_x": 0.5, "center_y": 0.6}  # Изменено на 0.6
+            md_bg_color: 50/255, 0, 69/255, 1
+            text_color: 'white'
+
+        MDRoundFlatButton:
+            text: "Настройки"
+            size_hint: (0.4, 0.08)
+            height: dp(48)
+            size_hint_max: (300, 50)
+            _min_width: root.ids.start_learning_loop.width
+            pos_hint: {"center_x": 0.5, "center_y": 0.45}  # Изменено на 0.45
+            md_bg_color: 50/255, 0, 69/255, 1
+            text_color: 'white'
+            on_press: root.change_screen()
+
+        MDRoundFlatButton:
+            text: "Выход"
+            size_hint: (0.4, 0.08)
+            height: dp(48)
+            size_hint_max: (300, 50)
+            _min_width: root.ids.start_learning_loop.width
+            pos_hint: {"center_x": 0.5, "center_y": 0.3}  # Изменено на 0.3
+            md_bg_color: 50/255, 0, 69/255, 1
+            text_color: 'white'
+            on_press: app.stop()
+
+<MobileView>
+    name: "MobileView"
+    FloatLayout:
+        size_hint: (1, 1)  # Позволяет занимать всю доступную высоту и ширину
+
+        MDRoundFlatButton:
+            id: start_learning_loop
+            text: "Начать обучение mobile"
+            size_hint: (0.4, 0.08)
+            size_hint_max: (300, 50)
+            pos_hint: {"center_x": 0.5, "center_y": 0.75}
+            md_bg_color: 50/255, 0, 69/255, 1
+            text_color: 'white'
+            on_press: root.preparation_to_learn()
+
+        MDRoundFlatButton:
+            text: "Статистика"
+            size_hint: (0.4, 0.08)
+            height: dp(48)
+            size_hint_max: (300, 50)
+            _min_width: root.ids.start_learning_loop.width
+            pos_hint: {"center_x": 0.5, "center_y": 0.6}  # Изменено на 0.6
+            md_bg_color: 50/255, 0, 69/255, 1
+            text_color: 'white'
+
+        MDRoundFlatButton:
+            text: "Настройки"
+            size_hint: (0.4, 0.08)
+            height: dp(48)
+            size_hint_max: (300, 50)
+            _min_width: root.ids.start_learning_loop.width
+            pos_hint: {"center_x": 0.5, "center_y": 0.45}  # Изменено на 0.45
+            md_bg_color: 50/255, 0, 69/255, 1
+            text_color: 'white'
+            on_press: root.change_screen()
+
+        MDRoundFlatButton:
+            text: "Выход"
+            size_hint: (0.4, 0.08)
+            height: dp(48)
+            size_hint_max: (300, 50)
+            _min_width: root.ids.start_learning_loop.width
+            pos_hint: {"center_x": 0.5, "center_y": 0.3}  # Изменено на 0.3
+            md_bg_color: 50/255, 0, 69/255, 1
+            text_color: 'white'
+            on_press: app.stop()
+
+<TabletView>
+    name: "TabletView"
+    FloatLayout:
+        size_hint: (1, 1)  # Позволяет занимать всю доступную высоту и ширину
+
+        MDRoundFlatButton:
+            id: start_learning_loop
+            text: "Начать обучение tablet"
+            size_hint: (0.4, 0.08)
+            size_hint_max: (300, 50)
+            pos_hint: {"center_x": 0.5, "center_y": 0.75}
+            md_bg_color: 50/255, 0, 69/255, 1
+            text_color: 'white'
+            on_press: root.preparation_to_learn()
+
+        MDRoundFlatButton:
+            text: "Статистика"
+            size_hint: (0.4, 0.08)
+            height: dp(48)
+            size_hint_max: (300, 50)
+            _min_width: root.ids.start_learning_loop.width
+            pos_hint: {"center_x": 0.5, "center_y": 0.6}  # Изменено на 0.6
+            md_bg_color: 50/255, 0, 69/255, 1
+            text_color: 'white'
+
+        MDRoundFlatButton:
+            text: "Настройки"
+            size_hint: (0.4, 0.08)
+            height: dp(48)
+            size_hint_max: (300, 50)
+            _min_width: root.ids.start_learning_loop.width
+            pos_hint: {"center_x": 0.5, "center_y": 0.45}  # Изменено на 0.45
+            md_bg_color: 50/255, 0, 69/255, 1
+            text_color: 'white'
+            on_press: root.change_screen()
+
+        MDRoundFlatButton:
+            text: "Выход"
+            size_hint: (0.4, 0.08)
+            height: dp(48)
+            size_hint_max: (300, 50)
+            _min_width: root.ids.start_learning_loop.width
+            pos_hint: {"center_x": 0.5, "center_y": 0.3}  # Изменено на 0.3
             md_bg_color: 50/255, 0, 69/255, 1
             text_color: 'white'
             on_press: app.stop()
@@ -38,28 +242,36 @@ MainScreen:
 <Preparation>:
     GridLayout:
         id: dialog_layout
+        _min_width: root.width
         cols: 1
-        padding: 10
+        padding: dp(10)
+        spacing: dp(10)  # Добавлено для отступов между элементами
 
         MDTextField:
-            id: CountInput
+            id: sample_size_input
             input_filter: 'int'
             hint_text: 'Введите количество слов для изучения'
+            hint_text_width: 20
+            size_hint_max_x: root.ids.dialog_layout.width
+            # font_size: self.width / 20
             mode: 'rectangle'
             size_hint: (1, None)
-            height: 50
-            multiline: True
+            height: dp(50)
+            multiline: False  # Изменено на False, чтобы избежать увеличения высоты
 
         GridLayout:
             id: choose_language
             cols: 2
-            padding: 10
+            padding: dp(10)
+            spacing: dp(10)  # Добавлено для отступов между элементами
 
             MDCheckbox:
                 id: eng_checkbox
                 group: 'lang'
+                active: True
                 color_active: '5B35A0'
-                size: (48, 48)
+                size_hint: (None, None)
+                size: (dp(48), dp(48))
                 halign: 'right'
                 _no_ripple_effect: True
 
@@ -67,13 +279,15 @@ MainScreen:
                 text: "English"
                 halign: "left"
                 font_style: 'H6'
-                padding: 25
+                size_hint_y: None
+                height: self.texture_size[1] + dp(10)  # Установка высоты в зависимости от текста
 
             MDCheckbox:
                 id: rus_checkbox
                 group: 'lang'
                 color_active: '5B35A0'
-                size: (48, 48)
+                size_hint: (None, None)
+                size: (dp(48), dp(48))
                 halign: 'right'
                 _no_ripple_effect: True
 
@@ -81,19 +295,21 @@ MainScreen:
                 text: "Russian"
                 halign: "left"
                 font_style: 'H6'
-                padding: 25
+                size_hint_y: None
+                height: self.texture_size[1] + dp(10)  # Установка высоты в зависимости от текста
+
+        GridLayout:
+            cols: 2
+            size_hint_y: None
+            height: dp(50)
 
             MDFlatButton:
                 text: "Cancel"
                 id: cancel_button
-                size_hint: (1, None)
-                width: 50
-                height: 50
+                size_hint_x: 0.5
 
             MDRectangleFlatButton:
                 text: "OK"
                 id: confirm_button
-                size_hint: (1, None)
-                height: 50
-                width: 50
+                size_hint_x: 0.5
                 disabled: True
