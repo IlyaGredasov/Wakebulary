@@ -1,13 +1,19 @@
 from __future__ import annotations
-from logger import logger
-from src.backend.statistics import WordStatistics
+
 import sqlite3
 import string
-from os.path import isfile
-from typing import Literal
+import os
+from logger import logger
+from typing import Literal, Callable
+from config import SRC_DIR
 
 
-def low_and_cap_args(func):
+def low_and_cap_args(func: Callable[[str, list[str]], ...]):
+    """
+    Decorator to convert all arguments to lower case, capitalize first letter,
+    and remove any non-alphanumeric characters or spaces.
+    """
+
     def wrapper(*args):
         new_args = [
             arg.lower().capitalize().replace(u'\xa0', u' ') if isinstance(arg, str) else
@@ -21,6 +27,9 @@ def low_and_cap_args(func):
 
 
 class DataBaseClient:
+    """
+    Singleton class for database operations.
+    """
     __instance = None
 
     def __new__(cls, *args, **kwargs):
@@ -28,18 +37,22 @@ class DataBaseClient:
             cls.__instance = super().__new__(cls)
         return cls.__instance
 
-    def __init__(self):
-        self.connection: sqlite3.Connection = sqlite3.connect("database.db")
+    def __init__(self, database_name: str):
+        self.connection: sqlite3.Connection = sqlite3.connect(os.path.join(SRC_DIR, database_name))
         self.cursor = self.connection.cursor()
-        tables_fetch = self.cursor.execute("SELECT name FROM sqlite_master")
-        tables = tables_fetch.fetchall()
+        tables = self.cursor.execute("SELECT name FROM sqlite_master").fetchall()
         if not tables:
             self.init_db()
+            logger.info("Database was initialized")
         self.cursor.execute("PRAGMA foreign_keys = ON")
+        logger.info("Database was connected")
         self.clear_orphans()
 
     @low_and_cap_args
     def word_type(self, word: str) -> Literal["rus", "eng"] | None:
+        """
+        Returns type of word ('rus', 'eng' or None) based on its content
+        """
         if all(c in string.ascii_letters + string.punctuation + ' ' for c in word):
             return "eng"
         if all(c in "абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ " + string.punctuation for c in
@@ -48,29 +61,46 @@ class DataBaseClient:
         return None
 
     @low_and_cap_args
-    def insert_transl(self, word: str, translation: list[str]) -> None:
+    def check_transl(self, word: str, translations: list[str]) -> bool:
+        """
+        Checks if all words in the translations have same type and
+        given word has an opposite one
+        """
         word_type = self.word_type(word)
-        translations_type = list(map(self.word_type, translation))
+        translations_type = list(map(self.word_type, translations))
         if word_type is None or any(t is None for t in translations_type):
-            logger.info(f"Invalid word type in query,{word},{tuple(translation)}")
-            return
+            logger.info(f"Invalid word type in query,{word},{tuple(translations)}")
+            return False
         if len(set(translations_type)) > 1:
-            logger.info(f"Different word type in translation, {word}, {tuple(translation)}")
-            return
+            logger.info(f"Different word type in the translations, {word}, {tuple(translations)}")
+            return False
         if word_type == translations_type[0]:
-            logger.info(f"Required word translation, {word}, {tuple(translation)}")
+            logger.info(f"Required word translations, {word}, {tuple(translations)}")
+            return False
+        return True
+
+    @low_and_cap_args
+    def insert_transl(self, word: str, translations: list[str]) -> None:
+        """
+        Inserts a new word with its translations into the database.
+        Also inserts corresponding translations into the summary table
+        If any word already exists in the database, function doesn't do anything.
+        """
+        if not self.check_transl(word, translations):
             return
-        translations_type = translations_type[0]
+        word_type = self.word_type(word)
+        translations_type = self.word_type(translations[0])
         if not self.find_word(word):
             self.cursor.execute(
                 f"INSERT INTO {word_type} (word) VALUES (\"{word}\");",
             )
-        for i, transl in enumerate(translation):
+            logger.info(f"word \"{word}\" was inserted {word_type} table to successfully")
+        for transl in translations:
             if not self.find_word(transl):
                 self.cursor.execute(
                     f"INSERT INTO {translations_type} (word) VALUES (\"{transl}\")",
                 )
-        for i, transl in enumerate(translation):
+                logger.info(f"word \"{word}\" was inserted {word_type} table to successfully")
             res = self.cursor.execute(
                 f"""
                 SELECT eng_rus.eng_id, eng_rus.rus_id
@@ -97,19 +127,11 @@ class DataBaseClient:
         self.connection.commit()
 
     @low_and_cap_args
-    def erase_transl(self, word: str, translation: list[str]) -> None:
+    def erase_transl(self, word: str, translations: list[str]) -> None:
+        if not self.check_transl(word, translations):
+            return
         word_type = self.word_type(word)
-        translations_type = list(map(self.word_type, translation))
-        if word_type is None or any(t is None for t in translations_type):
-            logger.info(f"Invalid word type in query,{word},{tuple(translation)}")
-            return
-        if len(set(translations_type)) > 1:
-            logger.info(f"Different word type in translation, {word}, {tuple(translation)}")
-            return
-        if word_type == translations_type[0]:
-            logger.info(f"Required word translation, {word}, {tuple(translation)}")
-            return
-        for transl in translation:
+        for transl in translations:
             self.cursor.execute(
                 f"""
                     DELETE FROM eng_rus 
@@ -121,7 +143,8 @@ class DataBaseClient:
                     """,
                 (word, transl) if word_type == "eng" else (transl, word)
             )
-            logger.info(f"Translations were inserted successfully, {word}, {transl}")
+            logger.info(f"Translations were deleted successfully, {word}, {transl}")
+            self.clear_orphans()
         self.connection.commit()
 
     @low_and_cap_args
@@ -152,6 +175,9 @@ class DataBaseClient:
 
     @low_and_cap_args
     def get_statistics(self, word: str) -> tuple[int, int]:
+        """
+        Returns the number of correct and attempts for the given word.
+        """
         word_type = self.word_type(word)
         if word_type is not None:
             res = self.cursor.execute(
@@ -166,6 +192,9 @@ class DataBaseClient:
 
     @low_and_cap_args
     def set_statistics(self, word: str, correct: int, attempts: int) -> None:
+        """
+        Set the statistics for the given word
+        """
         word_type = self.word_type(word)
         if word_type is not None:
             self.cursor.execute(
@@ -180,7 +209,12 @@ class DataBaseClient:
 
     @low_and_cap_args
     def translate_word(self, word: str) -> list[str]:
+        """
+        Returns a list of translations for the given word.
+        """
         word_type = self.word_type(word)
+        if word_type is None:
+            return []
         opposite_word_type = "rus" if word_type == "eng" else "eng"
         self.cursor.execute(
             f"""
@@ -197,6 +231,9 @@ class DataBaseClient:
 
     @low_and_cap_args
     def find_word(self, word: str) -> bool:
+        """
+        Check if a word in the database
+        """
         word_type = self.word_type(word)
         res = self.cursor.execute(
             f"""
@@ -206,32 +243,25 @@ class DataBaseClient:
             """,
             (word,)
         )
-        query = res.fetchall()
-        return len(query) > 0
+        return len(res.fetchall()) > 0
 
-    def load_to_dict(self, mode: Literal["rus", "eng"]) -> dict[WordStatistics, list[str]]:
+    def load_list(self, mode: Literal["rus", "eng"]) -> list[str]:
+        """
+        Makes a list of words from the database in correctness ratio order.
+        """
         res = self.cursor.execute(
-            f"SELECT * FROM {mode}"
-        )
-        words = [WordStatistics(*el[1:]) for el in res.fetchall()]
-        return {word_stat: self.translate_word(word_stat.word) for word_stat in words}
-
-    def clear_statistics(self) -> None:
-        self.cursor.execute(
-            """
-            UPDATE rus SET correct = 0, attempts = 0
+            f"""
+            SELECT word
+            FROM {mode}
+            ORDER BY CAST(eng.correct AS double)/CAST(MAX(1,eng.attempts) AS double);
             """
         )
-        logger.info("All statistics in rus table were cleared")
-        self.cursor.execute(
-            """
-            UPDATE eng SET correct = 0, attempts = 0
-            """
-        )
-        logger.info("All statistics in eng table were cleared")
-        self.connection.commit()
+        return [el[0] for el in res.fetchall()]
 
     def init_db(self) -> None:
+        """
+        Initializes the database if it isn't created
+        """
         self.cursor.execute(
             """
             DROP TABLE IF EXISTS rus
@@ -285,3 +315,4 @@ class DataBaseClient:
             """
         )
         logger.info("eng_rus table was created")
+        self.connection.commit()

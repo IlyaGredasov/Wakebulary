@@ -6,3 +6,4 @@ __pycache__/
 /logs.log
 *.pyc
 /src/backend/logs.log
+/tests/test_database.db
