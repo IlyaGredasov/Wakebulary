@@ -1,7 +1,9 @@
+from kivy.properties import NumericProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.popup import Popup
 from kivy.uix.screenmanager import Screen
+from kivymd.uix.dialog import MDDialog
 from kivymd.uix.responsivelayout import MDResponsiveLayout
 
 from backend.db_client import DataBaseClient
@@ -37,6 +39,9 @@ class BaseView(FloatLayout):
     def add_to_base(self):
         MainScreen.add_to_base(self)
 
+    def delete_from_base(self):
+        MainScreen.delete_from_base(self)
+
 
 class MobileView(BaseView):
     pass
@@ -64,15 +69,17 @@ class MainScreen(MDResponsiveLayout, Screen):
         self.tablet_view = TabletView()
         self.desktop_view = DesktopView()
 
+    def size_h(self) -> object:
+        match self.real_device_type:
+            case 'tablet':
+                return [self.width / 2, self.height / 2]
+            case 'mobile':
+                return [self.width, self.height / 2]
+            case 'desktop':
+                return [(self.width / 4), self.height / 4]
+
     def preparation_to_learn(self):
-        size_h = (1, 1)
-        match self.name:
-            case 'tablet_view':
-                size_h = (self.width / 2, self.height / 2)
-            case 'mobile_view':
-                size_h = (self.width, self.height / 2)
-            case 'desktop_view':
-                size_h = (self.width / 4, self.height / 4)
+        size_h = self.parent.size_h()
 
         self.show = Preparation()
         self.dialog = Popup(title='',
@@ -113,3 +120,10 @@ class MainScreen(MDResponsiveLayout, Screen):
         self.ids.word_input.focus = True
         self.ids.translation_input.text = ''
         self.ids.word_input.select_all()
+
+    def delete_from_base(self):
+        db = DataBaseClient()
+        db.erase_transl(self.ids.word_erase_input.text, [self.ids.translation_erase_input.text])
+        self.ids.word_erase_input.focus = True
+        self.ids.translation_erase_input.text = ''
+        self.ids.word_erase_input.select_all()

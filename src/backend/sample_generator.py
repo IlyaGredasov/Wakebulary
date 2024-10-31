@@ -7,14 +7,14 @@ from typing import Literal
 from random import expovariate, choice
 
 import asynckivy as ak
-from application.LearnScreen import LearnScreen
+from application.learn_screen import LearnScreen
 from logger import logger
 from src.backend.statistics import WordStatistics, SessionStatistics, WordTranslation
 from src.backend.db_client import DataBaseClient
 
 
 class SampleGenerator:
-    def __init__(self, mode: Literal["rus", "eng"], alpha: float = 8, clear_delay: float = 1) -> None:
+    def __init__(self, mode: Literal["rus", "eng"], alpha: float = 8, clear_delay: float = 0.01) -> None:
         """
 
         :rtype: object
@@ -46,13 +46,14 @@ class SampleGenerator:
                 print(f"{self.question_word.word} ?")
                 print(f"Remain: {len(self.__global_list)}, remain in sample: {len(sample)}, Your answer:")
 
-                await asyncio.sleep(1)
-                #answer = input().capitalize()
+                await asyncio.sleep(0.001)
+                # answer = input().capitalize()
+                screen.update_label()
                 await screen.press_event.wait()
                 # answer = LearnScreen.confirm_answer(screen.ids.translation_input)
-                answer = screen.ids.translation_input.text
+                answer = screen.ids.translation_input.text.capitalize()
 
-                if answer == "!end":
+                if answer == "!end" or answer == '!End':
                     raise KeyboardInterrupt
                 correct, attempts = self.__db.get_statistics(self.question_word.word)
                 if answer in self.question_word.translation:

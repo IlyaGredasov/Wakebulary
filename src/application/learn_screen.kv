@@ -1,0 +1,67 @@
+#:import asyncio asyncio
+
+LearnScreen:
+    name: "LearnScreen"
+    BoxLayout:
+        orientation: 'vertical'
+        padding: dp(10)
+        spacing: dp(10)
+
+        Widget:
+            size_hint_y: 0.1
+
+        MDLabel:
+            id: word_label
+            text: str(root.question_word)
+            halign: 'center'
+            font_style: 'H5'
+            size_hint_y: None
+            valign: 'top'
+            pos_hint: {'x': 0, 'y': 1}
+
+        MDLabel:
+            opacity: 0
+            id: feedback_label
+            canvas.before:
+                Color:
+                    rgba: (1,0,0, 1)
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+                    radius: [20,]
+            text: ''
+            halign: 'center'
+            pos_hint: {'center_x': 0.5}
+            size_hint: (0.2, 0.01)
+            valign: 'top'
+
+        MDTextField:
+            id: translation_input
+            text: ''
+            hint_text: "Введите перевод слова"
+            pos_hint: {'center_x': 0.5}
+            multiline: False
+            size_hint_y: None
+            size_hint: (0.2, None)
+            on_text_validate: asyncio.create_task(root.pressed())
+
+        MDRoundFlatButton:
+            text: 'Проверить'
+            pos_hint: {'center_x': 0.5} 
+            multiline: False
+            size_hint_y: None
+            size_hint: (0.2, None)
+            on_press: asyncio.create_task(root.pressed())
+
+        MDRoundFlatButton:
+            text: 'Завершить'
+            pos_hint: {'center_x': 0.5, 'y': 0.8}
+            multiline: False
+            size_hint_y: None
+            size_hint: (0.2, None)
+            on_press: asyncio.create_task(root.exit())
+
+        
+
+        Widget:
+            size_hint_y: 0.06

@@ -8,20 +8,10 @@ MainScreen:
             text: "Начать обучение desktop"
             size_hint: (0.4, 0.08)
             size_hint_max: (300, 50)
-            pos_hint: {"center_x": 0.5, "center_y": 0.75}
+            pos_hint: {"center_x": 0.5, "center_y": 0.6}
             md_bg_color: 50/255, 0, 69/255, 1
             text_color: 'white'
             on_press: root.preparation_to_learn()
-
-        MDRoundFlatButton:
-            text: "Статистика"
-            size_hint: (0.4, 0.08)
-            height: dp(48)
-            size_hint_max: (300, 50)
-            _min_width: root.ids.start_learning_loop.width
-            pos_hint: {"center_x": 0.5, "center_y": 0.6}  # Изменено на 0.6
-            md_bg_color: 50/255, 0, 69/255, 1
-            text_color: 'white'
 
         MDRoundFlatButton:
             text: "Настройки"
@@ -108,20 +98,10 @@ MainScreen:
             text: "Начать обучение desktop"
             size_hint: (0.4, 0.08)
             size_hint_max: (300, 50)
-            pos_hint: {"center_x": 0.5, "center_y": 0.75}
+            pos_hint: {"center_x": 0.5, "center_y": 0.6}
             md_bg_color: 50/255, 0, 69/255, 1
             text_color: 'white'
             on_press: root.preparation_to_learn()
-
-        MDRoundFlatButton:
-            text: "Статистика"
-            size_hint: (0.4, 0.08)
-            height: dp(48)
-            size_hint_max: (300, 50)
-            _min_width: root.ids.start_learning_loop.width
-            pos_hint: {"center_x": 0.5, "center_y": 0.6}  # Изменено на 0.6
-            md_bg_color: 50/255, 0, 69/255, 1
-            text_color: 'white'
 
         MDRoundFlatButton:
             text: "Настройки"
@@ -145,6 +125,59 @@ MainScreen:
             text_color: 'white'
             on_press: app.stop()
 
+        MDCard:
+            size_hint: None, None
+            size: 0.3, 0.5
+            pos_hint: {"center_x": 0.8, "center_y": 0.3}
+            padding: 25
+            spacing: 25
+            orientation: 'vertical'
+
+            Label:
+                text: "Удалить слово"
+                size_hint_y: None
+                pos_hint: {'center_x':0.5, 'center_y': 0.5}
+                height: dp(30)
+
+            MDTextField:
+                id: word_erase_input
+                hint_text: "word"
+                icon_right: "translate-off"
+                size_hint_x: None
+                width: dp(200)
+                font_size: 18
+                pos_hint:  {"center_x": 0.5}
+                field_filter: 'str'
+                on_text_validate: root.ids.translation_erase_input.focus = True
+
+            MDTextField:
+                id: translation_erase_input
+                hint_text: "translation"
+                icon_right: "translate"
+                size_hint_x: None
+                width: dp(200)
+                pos_hint:  {"center_x": 0.5}
+                field_filter: 'str'
+                on_text_validate: root.delete_from_base()
+
+            MDRoundFlatButton:
+                id: delete_from_base_button
+                text: 'Delete from base'
+                font_size: 12
+                pos_hint: {"center_x": 0.5}
+                on_press: root.delete_from_base()
+
+            MDRoundFlatButton:
+                text: 'Clear'
+                font_size: 12
+                _min_width: root.ids.delete_from_base_button.width
+                pos_hint: {"center_x": 0.5}
+                on_press: app.clear()
+            
+            Widget:
+                size_hint_y: None
+                height: 10
+
 <MobileView>
     name: "MobileView"
     FloatLayout:
@@ -155,20 +188,10 @@ MainScreen:
             text: "Начать обучение mobile"
             size_hint: (0.4, 0.08)
             size_hint_max: (300, 50)
-            pos_hint: {"center_x": 0.5, "center_y": 0.75}
+            pos_hint: {"center_x": 0.5, "center_y": 0.6}
             md_bg_color: 50/255, 0, 69/255, 1
             text_color: 'white'
             on_press: root.preparation_to_learn()
-
-        MDRoundFlatButton:
-            text: "Статистика"
-            size_hint: (0.4, 0.08)
-            height: dp(48)
-            size_hint_max: (300, 50)
-            _min_width: root.ids.start_learning_loop.width
-            pos_hint: {"center_x": 0.5, "center_y": 0.6}  # Изменено на 0.6
-            md_bg_color: 50/255, 0, 69/255, 1
-            text_color: 'white'
 
         MDRoundFlatButton:
             text: "Настройки"
@@ -202,20 +225,10 @@ MainScreen:
             text: "Начать обучение tablet"
             size_hint: (0.4, 0.08)
             size_hint_max: (300, 50)
-            pos_hint: {"center_x": 0.5, "center_y": 0.75}
+            pos_hint: {"center_x": 0.5, "center_y": 0.6}
             md_bg_color: 50/255, 0, 69/255, 1
             text_color: 'white'
             on_press: root.preparation_to_learn()
-
-        MDRoundFlatButton:
-            text: "Статистика"
-            size_hint: (0.4, 0.08)
-            height: dp(48)
-            size_hint_max: (300, 50)
-            _min_width: root.ids.start_learning_loop.width
-            pos_hint: {"center_x": 0.5, "center_y": 0.6}  # Изменено на 0.6
-            md_bg_color: 50/255, 0, 69/255, 1
-            text_color: 'white'
 
         MDRoundFlatButton:
             text: "Настройки"
@@ -241,8 +254,14 @@ MainScreen:
 
 <Preparation>:
     GridLayout:
+        canvas.before:
+            Color:
+                rgba: (40/255, 40/255, 40/255, 1)
+            Rectangle: 
+                pos: self.pos
+                size: self.size
         id: dialog_layout
-        _min_width: root.width
+        # _min_width: root.width
         cols: 1
         padding: dp(10)
         spacing: dp(10)  # Добавлено для отступов между элементами
@@ -255,7 +274,7 @@ MainScreen:
             size_hint_max_x: root.ids.dialog_layout.width
             # font_size: self.width / 20
             mode: 'rectangle'
-            size_hint: (1, None)
+            size_hint: (0.8, None)
             height: dp(50)
             multiline: False  # Изменено на False, чтобы избежать увеличения высоты
 
@@ -263,16 +282,17 @@ MainScreen:
             id: choose_language
             cols: 2
             padding: dp(10)
-            spacing: dp(10)  # Добавлено для отступов между элементами
+            spacing: dp(50)  # Добавлено для отступов между элементами
 
             MDCheckbox:
                 id: eng_checkbox
                 group: 'lang'
-                active: True
+                spacing: dp(50)
                 color_active: '5B35A0'
-                size_hint: (None, None)
+                size_hint: (1, None)
                 size: (dp(48), dp(48))
                 halign: 'right'
+                pos_hint: {'center_x': 0.8}
                 _no_ripple_effect: True
 
             MDLabel:
@@ -280,15 +300,17 @@ MainScreen:
                 halign: "left"
                 font_style: 'H6'
                 size_hint_y: None
-                height: self.texture_size[1] + dp(10)  # Установка высоты в зависимости от текста
-
+                size_hint: (1, None)
+                height: self.texture_size[1] + dp(25) # Установка высоты в зависимости от текста
             MDCheckbox:
                 id: rus_checkbox
                 group: 'lang'
+                spacing: dp(50)
                 color_active: '5B35A0'
-                size_hint: (None, None)
+                size_hint: (1, None)
                 size: (dp(48), dp(48))
                 halign: 'right'
+                pos_hint: {'center_x': 0.8}
                 _no_ripple_effect: True
 
             MDLabel:
@@ -296,7 +318,8 @@ MainScreen:
                 halign: "left"
                 font_style: 'H6'
                 size_hint_y: None
-                height: self.texture_size[1] + dp(10)  # Установка высоты в зависимости от текста
+                size_hint: (1, None)
+                height: self.texture_size[1] + dp(25) # Установка высоты в зависимости от текста
 
         GridLayout:
             cols: 2
