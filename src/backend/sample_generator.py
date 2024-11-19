@@ -31,8 +31,9 @@ class SampleGenerator:
                 sample.append(WordTranslation(word, self.__db.translate_word(word)))
             while sample:
                 question_word = choice(sample)
-                print(f"{question_word.word} ?")
-                print(f"Remain: {len(self.__global_list)}, remain in sample: {len(sample)}, Your answer:")
+                print(f"{question_word.word}?")
+                print(f"Remain: {len(self.__global_list)}, Remain in sample: {len(sample)}, "
+                      f"Correct: {100 * self.session_stats.precision:.1f}%, Your answer:")
                 answer = input().capitalize()
                 if answer == "!end":
                     raise KeyboardInterrupt
