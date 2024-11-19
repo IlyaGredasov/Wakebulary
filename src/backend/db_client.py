@@ -253,7 +253,7 @@ class DataBaseClient:
             f"""
             SELECT word
             FROM {mode}
-            ORDER BY CAST(eng.correct AS double)/CAST(MAX(1,eng.attempts) AS double);
+            ORDER BY CAST({mode}.correct AS double)/CAST(MAX(1,{mode}.attempts) AS double);
             """
         )
         return [el[0] for el in res.fetchall()]
