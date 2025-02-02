@@ -18,7 +18,7 @@ class SampleGenerator:
         self.session_stats = SessionStatistics(0, 0, time())
         self.clear_delay = clear_delay
 
-    def start_learning_loop(self, sample_size: int = 30) -> None:
+    def start_learning_loop(self, sample_size: int = 50) -> None:
         sample: list[WordTranslation] = 0 * [WordTranslation()]
         os.system('cls' if os.name == 'nt' else 'clear')
         while self.__global_list:
