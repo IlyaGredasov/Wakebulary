@@ -3,11 +3,14 @@ from __future__ import annotations
 import os
 
 from time import time, sleep
-from typing import Literal
-from random import expovariate, choice
+from typing import Literal, List
+from random import expovariate, choice, random, randint
 from logger import logger
+from sys import argv
 from src.backend.statistics import SessionStatistics, WordTranslation
 from src.backend.db_client import DataBaseClient
+
+RANDOMNESS_CONST = float(argv[2])
 
 
 class SampleGenerator:
@@ -18,15 +21,18 @@ class SampleGenerator:
         self.session_stats = SessionStatistics(0, 0, time())
         self.clear_delay = clear_delay
 
-    def start_learning_loop(self, sample_size: int = 30) -> None:
-        sample: list[WordTranslation] = 0 * [WordTranslation()]
+    def start_learning_loop(self, sample_size: int = 50) -> None:
+        sample: List[WordTranslation] = []
         os.system('cls' if os.name == 'nt' else 'clear')
         while self.__global_list:
             while self.__global_list and len(sample) < sample_size:
-                index = round(expovariate(self.alpha / len(self.__global_list)))
-                while 0 > index >= len(self.__global_list):
+                if random() < RANDOMNESS_CONST:
                     index = round(expovariate(self.alpha / len(self.__global_list)))
-                    logger.debug(f"{index} out of {len(self.__global_list)}")
+                    while 0 > index and index >= len(self.__global_list):
+                        index = round(expovariate(self.alpha / len(self.__global_list)))
+                        logger.debug(f"{index} out of {len(self.__global_list)}")
+                else:
+                    index = randint(0, len(self.__global_list) - 1)
                 word: str = self.__global_list.pop(index)
                 sample.append(WordTranslation(word, self.__db.translate_word(word)))
             while sample:
