@@ -1,8 +1,8 @@
 from sys import argv
-from src.backend.sample_generator import SampleGenerator
+from sample_generator import SampleGenerator
 
 if __name__ == '__main__':
-    generator = SampleGenerator("rus" if argv[1] == "rus" else "eng")
+    generator = SampleGenerator(argv[1], "forward" if argv[2] == "forward" else "backward")
     try:
         generator.start_learning_loop()
     except KeyboardInterrupt:

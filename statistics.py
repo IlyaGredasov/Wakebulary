@@ -3,14 +3,13 @@ from time import time
 from datetime import timedelta
 
 
-class WordTranslation:
-
-    def __init__(self, word: str = None, translation: list[str] = None):
-        self.word = word
-        self.translation = translation
+@dataclass
+class WordMapping:
+    word: str
+    mapping: list[str]
 
     def __repr__(self):
-        return f"{self.word} - {tuple(self.translation)}"
+        return f"{self.word} - {tuple(self.mapping)}"
 
 
 @dataclass
