@@ -1,8 +1,4 @@
-import os
-from pathlib import Path
-from config import SRC_DIR
 import pytest
-import tempfile
 
 from src.backend.db_client import DataBaseClient, low_and_cap_args
 
@@ -11,19 +7,19 @@ from src.backend.db_client import DataBaseClient, low_and_cap_args
 def db_fixture():
     db_instance = DataBaseClient("tests/test_database.db")
     db_instance.cursor.execute(
-        f"""
+        """
         INSERT INTO eng (id, word)
         VALUES (1,'Easy'), (2,'Light'), (3,'Empty');
         """
     )
     db_instance.cursor.execute(
-        f"""
+        """
         INSERT INTO rus (id, word)
         VALUES (1,'Легкий'), (2, 'Простой');
         """
     )
     db_instance.cursor.execute(
-        f"""
+        """
         INSERT INTO eng_rus (id,eng_id, rus_id)
         VALUES (1, 1, 1), (2, 1, 2), (3, 2, 1);
         """
@@ -100,7 +96,7 @@ def test_clear_orphans(db_fixture):
 
 def test_get_statistics(db_fixture):
     db_fixture.cursor.execute(
-        f"""
+        """
         UPDATE eng
         SET correct = 1, attempts = 1
         WHERE word = 'Light'

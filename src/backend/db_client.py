@@ -102,7 +102,7 @@ class DataBaseClient:
                 )
                 logger.info(f"word \"{word}\" was inserted {word_type} table to successfully")
             res = self.cursor.execute(
-                f"""
+                """
                 SELECT eng_rus.eng_id, eng_rus.rus_id
                 FROM
                     eng
@@ -115,7 +115,7 @@ class DataBaseClient:
             query = res.fetchall()
             if len(query) == 0:
                 self.cursor.execute(
-                    f"""
+                    """
                     INSERT INTO eng_rus (eng_id, rus_id)
                     SELECT eng.id, rus.id
                     FROM eng CROSS JOIN rus
@@ -133,7 +133,7 @@ class DataBaseClient:
         word_type = self.word_type(word)
         for transl in translations:
             self.cursor.execute(
-                f"""
+                """
                     DELETE FROM eng_rus 
                     WHERE (eng_id, rus_id) IN (
                         SELECT eng.id, rus.id
