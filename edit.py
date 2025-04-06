@@ -29,7 +29,7 @@ while True:
                     f"ins>word>trn1>trn2... - insert(word, [translations]){linesep}"
                     f"ers>word>trn1>trn2... - erase(word, [translations]){linesep}"
                     f"del>word - delete(word) {linesep}"
-                    f"rep>word>trn1>trn2 - replace(word, [translations1], [translations2]){linesep}"
+                    f"rep>word>trn1>trn2 - replace(word, translations1, translations2){linesep}"
                     f"end - end")
             case "end":
                 break

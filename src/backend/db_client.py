@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import os
 import sqlite3
 import string
-import os
-from logger import logger
 from typing import Literal, Callable
+
 from config import SRC_DIR
+from logger import logger
 
 
 def low_and_cap_args(func: Callable[[str, list[str]], ...]):

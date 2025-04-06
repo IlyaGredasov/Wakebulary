@@ -1,6 +1,6 @@
 from dataclasses import dataclass
-from time import time
 from datetime import timedelta
+from time import time
 
 
 class WordTranslation:
