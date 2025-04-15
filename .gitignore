@@ -7,3 +7,4 @@ __pycache__/
 *.pyc
 /src/backend/logs.log
 /tests/test_database.db
+.idea/
