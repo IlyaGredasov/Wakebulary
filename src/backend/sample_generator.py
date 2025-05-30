@@ -2,15 +2,12 @@ from __future__ import annotations
 
 import os
 from random import expovariate, choice, random, randint
-from sys import argv
 from time import time, sleep
 from typing import Literal, List
 
 from logger import logger
 from src.backend.db_client import DataBaseClient
 from src.backend.statistics import SessionStatistics, WordTranslation
-
-RANDOMNESS_CONST = float(argv[2])
 
 
 class SampleGenerator:
@@ -21,13 +18,13 @@ class SampleGenerator:
         self.session_stats = SessionStatistics(0, 0, time())
         self.clear_delay = clear_delay
 
-    def start_learning_loop(self, sample_size: int = 50) -> None:
+    def start_learning_loop(self, sample_size: int = 50, randomness_const: float = 0) -> None:
         sample: List[WordTranslation] = []
         os.system('cls' if os.name == 'nt' else 'clear')
         previous_word = None
         while self.__global_list:
             while self.__global_list and len(sample) < sample_size:
-                if random() < RANDOMNESS_CONST:
+                if random() < randomness_const:
                     index = round(expovariate(self.alpha / len(self.__global_list)))
                     while 0 > index and index >= len(self.__global_list):
                         index = round(expovariate(self.alpha / len(self.__global_list)))
