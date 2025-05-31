@@ -1,5 +1,4 @@
 from src.backend.db_client import DataBaseClient
-from os import linesep
 
 db = DataBaseClient("database.db")
 
@@ -24,13 +23,15 @@ while True:
                 print(f"db.insert_transl({lexemes[1]}, {[lexemes[3]]})")
                 db.insert_transl(lexemes[1], [lexemes[3]])
             case "help":
-                print(
-                    f"trn>word - translate(word){linesep}"
-                    f"ins>word>trn1>trn2... - insert(word, [translations]){linesep}"
-                    f"ers>word>trn1>trn2... - erase(word, [translations]){linesep}"
-                    f"del>word - delete(word) {linesep}"
-                    f"rep>word>trn1>trn2 - replace(word, translations1, translations2){linesep}"
-                    f"end - end")
+                print(f"""
+options:
+trn>word              translate(word)
+ins>word>trn1>trn2... insert(word, [translations])
+ers>word>trn1>trn2... erase(word, [translations])
+del>word              delete(word)
+rep>word>trn1>trn2    replace(word, translations1, translations2)
+end                   end
+                    """)
             case "end":
                 break
     except Exception as e:
