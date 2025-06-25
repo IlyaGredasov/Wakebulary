@@ -22,6 +22,11 @@ while True:
                 db.erase_transl(lexemes[1], [lexemes[2]])
                 print(f"db.insert_transl({lexemes[1]}, {[lexemes[3]]})")
                 db.insert_transl(lexemes[1], [lexemes[3]])
+            case "src":
+                results = db.search_word(lexemes[1])
+                for w in results:
+                    translations = db.translate_word(w)
+                    print(f"{w} - {translations}")
             case "help":
                 print(f"""
 options:

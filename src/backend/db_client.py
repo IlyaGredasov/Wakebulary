@@ -105,11 +105,11 @@ class DataBaseClient:
             res = self.cursor.execute(
                 """
                 SELECT eng_rus.eng_id, eng_rus.rus_id
-                FROM
-                    eng
-                    INNER JOIN eng_rus ON eng.id = eng_rus.eng_id
-                    INNER JOIN rus ON eng_rus.rus_id = rus.id
-                WHERE eng.word = ? AND rus.word = ?
+                FROM eng
+                         INNER JOIN eng_rus ON eng.id = eng_rus.eng_id
+                         INNER JOIN rus ON eng_rus.rus_id = rus.id
+                WHERE eng.word = ?
+                  AND rus.word = ?
                 """,
                 (word, transl) if word_type == "eng" else (transl, word)
             )
@@ -119,8 +119,10 @@ class DataBaseClient:
                     """
                     INSERT INTO eng_rus (eng_id, rus_id)
                     SELECT eng.id, rus.id
-                    FROM eng CROSS JOIN rus
-                    WHERE eng.word = ? AND rus.word = ?
+                    FROM eng
+                             CROSS JOIN rus
+                    WHERE eng.word = ?
+                      AND rus.word = ?
                     """,
                     (word, transl) if word_type == "eng" else (transl, word)
                 )
@@ -135,13 +137,14 @@ class DataBaseClient:
         for transl in translations:
             self.cursor.execute(
                 """
-                    DELETE FROM eng_rus 
-                    WHERE (eng_id, rus_id) IN (
-                        SELECT eng.id, rus.id
-                        FROM eng CROSS JOIN rus
-                        WHERE eng.word = ? AND rus.word = ?
-                    )
-                    """,
+                DELETE
+                FROM eng_rus
+                WHERE (eng_id, rus_id) IN (SELECT eng.id, rus.id
+                                           FROM eng
+                                                    CROSS JOIN rus
+                                           WHERE eng.word = ?
+                                             AND rus.word = ?)
+                """,
                 (word, transl) if word_type == "eng" else (transl, word)
             )
             logger.info(f"Translations were deleted successfully, {word}, {transl}")
@@ -152,24 +155,22 @@ class DataBaseClient:
     def clear_orphans(self) -> None:
         self.cursor.execute(
             """
-            DELETE FROM rus
-            WHERE rus.word IN (
-                SELECT rus.word
-                FROM rus
-                        LEFT JOIN eng_rus ON rus.id = eng_rus.rus_id
-                WHERE rus_id IS NULL
-            )
+            DELETE
+            FROM rus
+            WHERE rus.word IN (SELECT rus.word
+                               FROM rus
+                                        LEFT JOIN eng_rus ON rus.id = eng_rus.rus_id
+                               WHERE rus_id IS NULL)
             """
         )
         self.cursor.execute(
             """
-            DELETE FROM eng
-            WHERE eng.word IN (
-                SELECT eng.word
-                FROM eng
-                        LEFT JOIN eng_rus ON eng.id = eng_rus.eng_id
-                WHERE eng_id IS NULL
-            )
+            DELETE
+            FROM eng
+            WHERE eng.word IN (SELECT eng.word
+                               FROM eng
+                                        LEFT JOIN eng_rus ON eng.id = eng_rus.eng_id
+                               WHERE eng_id IS NULL)
             """
         )
         self.connection.commit()
@@ -190,6 +191,8 @@ class DataBaseClient:
             )
             query = res.fetchall()
             return query[0] if len(query) > 0 else (0, 0)
+        else:
+            return 0, 0
 
     @low_and_cap_args
     def set_statistics(self, word: str, correct: int, attempts: int) -> None:
@@ -259,6 +262,25 @@ class DataBaseClient:
         )
         return [el[0] for el in res.fetchall()]
 
+    @low_and_cap_args
+    def search_word(self, word: str) -> list[str]:
+        """
+        Returns a list of words from the same language that contain the substring `word`.
+        """
+        word_type = self.word_type(word)
+        if word_type is None:
+            return []
+
+        self.cursor.execute(
+            f"""
+            SELECT word FROM {word_type}
+            WHERE word LIKE ?
+            LIMIT 20
+            """,
+            (f"%{word}%",)
+        )
+        return [row[0] for row in self.cursor.fetchall()]
+
     def init_db(self) -> None:
         """
         Initializes the database if it isn't created
@@ -283,10 +305,11 @@ class DataBaseClient:
         logger.info("eng_rus table was dropped")
         self.cursor.execute(
             """
-            CREATE TABLE rus(
-                id INTEGER PRIMARY KEY,
-                word VARCHAR(255) UNIQUE NOT NULL,
-                correct INTEGER DEFAULT 0,
+            CREATE TABLE rus
+            (
+                id       INTEGER PRIMARY KEY,
+                word     VARCHAR(255) UNIQUE NOT NULL,
+                correct  INTEGER DEFAULT 0,
                 attempts INTEGER DEFAULT 0
             )
             """
@@ -294,10 +317,11 @@ class DataBaseClient:
         logger.info("rus table was created")
         self.cursor.execute(
             """
-            CREATE TABLE eng(
-                id INTEGER PRIMARY KEY,
-                word VARCHAR(255) UNIQUE NOT NULL,
-                correct INTEGER DEFAULT 0,
+            CREATE TABLE eng
+            (
+                id       INTEGER PRIMARY KEY,
+                word     VARCHAR(255) UNIQUE NOT NULL,
+                correct  INTEGER DEFAULT 0,
                 attempts INTEGER DEFAULT 0
             )
             """
@@ -305,12 +329,13 @@ class DataBaseClient:
         logger.info("eng table was created")
         self.cursor.execute(
             """
-            CREATE TABLE eng_rus(
-                id INTEGER PRIMARY KEY,
+            CREATE TABLE eng_rus
+            (
+                id     INTEGER PRIMARY KEY,
                 eng_id INTEGER NOT NULL,
                 rus_id INTEGER NOT NULL,
-                FOREIGN KEY(eng_id) REFERENCES eng(id) ON DELETE CASCADE,
-                FOREIGN KEY(rus_id) REFERENCES rus(id) ON DELETE CASCADE,
+                FOREIGN KEY (eng_id) REFERENCES eng (id) ON DELETE CASCADE,
+                FOREIGN KEY (rus_id) REFERENCES rus (id) ON DELETE CASCADE,
                 UNIQUE (eng_id, rus_id)
             )
             """

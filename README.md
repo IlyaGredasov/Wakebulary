@@ -9,12 +9,17 @@ python main.py [-h] [--mode {eng,rus}] [--alpha ALPHA] [--clear_delay CLEAR_DELA
 ```
 options:
   -h, --help            show this help message and exit
+  
   --mode {eng,rus}      Mode of operation: 'eng' or 'rus' (default: eng)
+  
   --alpha ALPHA         Alpha value that is using in expovariate distribution (default: 8.0)
+  
   --clear_delay CLEAR_DELAY
                         Terminal clear delay in seconds (default: 1.0)
+  
   --randomness_const RANDOMNESS_CONST
                         Randomness constant between 0 and 1 (default: 1.0)
+  
   --sample_size SAMPLE_SIZE
                         Sample size for each session (default: 50)
 
@@ -23,9 +28,17 @@ options:
 python edit.py
 ```
 options:
+
 trn>word              translate(word)
+
 ins>word>trn1>trn2... insert(word, [translations])
+
 ers>word>trn1>trn2... erase(word, [translations])
+
 del>word              delete(word)
+
 rep>word>trn1>trn2    replace(word, translations1, translations2)
+
+src>word              search_word(word)
+
 end                   end
