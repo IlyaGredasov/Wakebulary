@@ -27,6 +27,20 @@ while True:
                 for w in results:
                     translations = db.translate_word(w)
                     print(f"{w} - {translations}")
+            case "exec":
+                sql_query = ">".join(lexemes[1:])
+                print(f"Executing SQL: {sql_query}")
+                try:
+                    result = db.cursor.execute(sql_query)
+                    db.connection.commit()
+                    if sql_query.strip().upper().startswith('SELECT'):
+                        rows = result.fetchall()
+                        for row in rows:
+                            print(row)
+                    else:
+                        print(f"Query executed successfully. Rows affected: {result.rowcount}")
+                except Exception as sql_error:
+                    print(f"SQL Error: {sql_error}")
             case "help":
                 print(f"""
 options:
@@ -35,6 +49,8 @@ ins>word>trn1>trn2... insert(word, [translations])
 ers>word>trn1>trn2... erase(word, [translations])
 del>word              delete(word)
 rep>word>trn1>trn2    replace(word, translations1, translations2)
+src>word              search word
+exec>SQL_QUERY        execute any SQL query
 end                   end
                     """)
             case "end":
