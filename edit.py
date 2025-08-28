@@ -1,9 +1,15 @@
 from src.backend.db_client import DataBaseClient
+from colorama import Fore, Style, init
 
+init(autoreset=True)
 db = DataBaseClient("database.db")
+
+def print_prompt():
+    print(f"{Fore.GREEN}{Style.BRIGHT}$ ", end="")
 
 while True:
     try:
+        print_prompt()
         lexemes = list(input().split(">"))
         match lexemes[0]:
             case "trn":
@@ -40,7 +46,7 @@ while True:
                     else:
                         print(f"Query executed successfully. Rows affected: {result.rowcount}")
                 except Exception as sql_error:
-                    print(f"SQL Error: {sql_error}")
+                    print(f"{Fore.RED}SQL Error: {e}{Style.RESET_ALL}")      
             case "help":
                 print(f"""
 options:
@@ -56,4 +62,4 @@ end                   end
             case "end":
                 break
     except Exception as e:
-        print(e)
+        print(f"{Fore.RED}Error: {e}{Style.RESET_ALL}")

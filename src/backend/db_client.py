@@ -275,7 +275,6 @@ class DataBaseClient:
             f"""
             SELECT word FROM {word_type}
             WHERE word LIKE ?
-            LIMIT 20
             """,
             (f"%{word}%",)
         )
