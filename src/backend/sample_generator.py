@@ -5,7 +5,7 @@ from random import expovariate, choice, random, randint
 from time import time, sleep
 from typing import Literal, List
 
-from logger import logger
+from src.utils.logger import logger
 from src.backend.db_client import DataBaseClient
 from src.backend.statistics import SessionStatistics, WordTranslation
 

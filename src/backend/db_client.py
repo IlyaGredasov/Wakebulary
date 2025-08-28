@@ -5,8 +5,8 @@ import sqlite3
 import string
 from typing import Literal, Callable
 
-from config import SRC_DIR
-from logger import logger
+from src.utils.config import SRC_DIR
+from src.utils.logger import logger
 
 
 def low_and_cap_args(func: Callable[[str, list[str]], ...]):

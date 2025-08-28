@@ -1,10 +1,7 @@
 .env
+.venv/
 __pycache__/
-/venv/
 /database.db
-/logs.log.*
-/logs.log
+*.log
 *.pyc
-/src/backend/logs.log
-/tests/test_database.db
 .idea/

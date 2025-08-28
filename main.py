@@ -1,4 +1,4 @@
-from args_parser import parse_args
+from src.utils.args_parser import parse_args
 from src.backend.sample_generator import SampleGenerator
 
 if __name__ == '__main__':
