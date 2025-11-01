@@ -1,7 +1,7 @@
-## Gist
+# Gist
 This is console app that helps you learn English words written in Python.
 (Can be compiled for particular OS binaries or just be run with Python) 
-## Usage
+### Usage
 - Run learning loop:
 ```python
 python main.py [-h] [--mode {eng,rus}] [--alpha ALPHA] [--clear_delay CLEAR_DELAY]
